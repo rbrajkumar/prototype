@@ -26,36 +26,46 @@ import com.company.dept.prototype.model.HoldParam;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-public class TicketControllerTests {
+public class TicketControllerFullRunTest {
 
 	@Autowired
     private MockMvc mockMvc;
 	
 	@Test
-	public void totalSeatsShouldNotNULL() throws Exception {
-						
-		this.mockMvc.perform(get("/ticket/seats-available")).andDo(print()).andExpect(status().is2xxSuccessful())
-		.andExpect(content().string(containsString("50")));
-		
+	public void oneCompleteTrnxn() throws Exception {
 		// flush all previous test cases
 		this.mockMvc.perform(get("/ticket/flush")).andDo(print()).andExpect(status().is2xxSuccessful());
 		
-	}
-	
-	@Test
-	public void holdSeatsTotalShouldNotNULL() throws Exception {
-				
 		// create mock
 		HoldParam param = new HoldParam();
 		param.setEmail("email@email.com");
 		param.setNo(2);
 		
 		// calling rest service
-		this.mockMvc.perform(post("/ticket/hold-seats")
+		MvcResult result = this.mockMvc.perform(post("/ticket/hold-seats")
 			  .content(asJsonString(param))
       		  .contentType(MediaType.APPLICATION_JSON)
       		  .accept(MediaType.APPLICATION_JSON)).andDo(print()).andExpect(status().is2xxSuccessful())
-			  .andExpect(content().string(containsString("2")));
+			  .andExpect(content().string(containsString("2"))).andReturn();
+		String content = result.getResponse().getContentAsString();
+		Map<String, Object> map = getMap(content);
+		Integer id = (Integer)map.get("id") ;
+		
+		// check availability again
+		this.mockMvc.perform(get("/ticket/seats-available")).andDo(print()).andExpect(status().is2xxSuccessful())
+		.andExpect(content().string(containsString("48")));
+		
+		// create mock
+		param = new HoldParam();
+		param.setEmail("email@email.com");
+		param.setNo(id.intValue());
+		
+		// calling rest service
+		this.mockMvc.perform(post("/ticket/reserve-seats")
+			  .content(asJsonString(param))
+      		  .contentType(MediaType.APPLICATION_JSON)
+      		  .accept(MediaType.APPLICATION_JSON)).andDo(print()).andExpect(status().is2xxSuccessful())
+			  .andExpect(content().string(containsString("code")));
 		
 		this.mockMvc.perform(get("/ticket/seats-available")).andDo(print()).andExpect(status().is2xxSuccessful())
 		.andExpect(content().string(containsString("48")));
@@ -65,28 +75,4 @@ public class TicketControllerTests {
 				
 	}
 	
-	@Test
-	public void holdSeatsCallTotalShouldSame() throws Exception {
-		// flush all previous test cases
-		this.mockMvc.perform(get("/ticket/flush")).andDo(print()).andExpect(status().is2xxSuccessful());
-		
-		// create mock
-		HoldParam param = new HoldParam();
-		param.setEmail("email@email.com");
-		param.setNo(2);
-		
-		// calling rest service
-		this.mockMvc.perform(post("/ticket/hold-seats")
-			  .content(asJsonString(param))
-      		  .contentType(MediaType.APPLICATION_JSON)
-      		  .accept(MediaType.APPLICATION_JSON)).andDo(print()).andExpect(status().is2xxSuccessful())
-			  .andExpect(content().string(containsString("2")));
-		
-		Thread.sleep(1500);
-		this.mockMvc.perform(get("/ticket/seats-available")).andDo(print()).andExpect(status().is2xxSuccessful())
-		.andExpect(content().string(containsString("50")));
-		
-		// flush all previous test cases
-		this.mockMvc.perform(get("/ticket/flush")).andDo(print()).andExpect(status().is2xxSuccessful());
-	}
 }

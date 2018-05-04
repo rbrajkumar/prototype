@@ -51,8 +51,8 @@ public class SeatHold {
 	
 	public String getKey() {
 		StringBuffer buffer = new StringBuffer();
-		buffer.append(getId()).append(":");
-		buffer.append(getEmail()).append(":");
+		buffer.append(getId()).append(_SEPARATOR);
+		buffer.append(getEmail()).append(_SEPARATOR);
 		buffer.append(getCount());
 		return buffer.toString();
 	}
