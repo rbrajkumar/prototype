@@ -7,7 +7,4 @@ public abstract class BaseService {
 	@Value("${prototype.app.ticket.capacity.total}")
 	protected int totalSeats;
 	
-	@Value("${prototype.app.ticket.hold.expiry.sec}")
-	protected int expiry;
-	
 }

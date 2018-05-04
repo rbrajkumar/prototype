@@ -29,4 +29,9 @@ public interface TicketService {
 	* @return a reservation confirmation code
 	*/
 	String reserveSeats(int seatHoldId, String customerEmail);
+	
+	/**
+	 * clear all seats and used to re-start the system
+	 */
+	void flush();
 }

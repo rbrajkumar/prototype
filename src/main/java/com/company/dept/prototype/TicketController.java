@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.company.dept.prototype.model.HoldParam;
+import com.company.dept.prototype.model.SeatHold;
+import com.company.dept.prototype.model.Status;
 import com.company.dept.prototype.service.TicketService;
 
 @RestController
@@ -23,9 +25,21 @@ public class TicketController {
 	
 	@PostMapping(value = "/hold-seats")
 	@ResponseStatus(HttpStatus.CREATED)
-	public void hold(@RequestBody HoldParam param) {
-		
-	}	
+	public SeatHold hold(@RequestBody HoldParam param) {
+		return ticketing.findAndHoldSeats(param.getNo(), param.getEmail());
+	}
+	
+	@PostMapping(value = "/reserve-seats")
+	@ResponseStatus(HttpStatus.CREATED)
+	public Status book(@RequestBody HoldParam param) {
+		String code = ticketing.reserveSeats(param.getNo(), param.getEmail());
+		return new Status(code, param.getEmail());
+	}
+	
+	@GetMapping("/flush")
+	public void clear() {
+		ticketing.flush();
+	}
 	
 	@Autowired
 	private TicketService ticketing;
