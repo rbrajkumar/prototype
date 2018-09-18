@@ -1,0 +1,171 @@
+package com.comcast.vrex.kinesis;
+
+import java.io.UnsupportedEncodingException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+//import org.json.JSONObject;
+
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.kinesis.*;
+import com.amazonaws.services.kinesis.model.*;
+import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
+import com.amazonaws.regions.*;
+
+/**
+ * Kinesis stream consumer App
+ *
+ */
+public class StreamReader 
+{
+    private static final int EXPECTED_ARGUMENT_NUMBER = 8;
+
+    private String amazonAccessKey = null;
+    private String amazonSecretKey = null;
+    private String amazonStreamName = "vrex-test2";
+    private String amazonRegionName = "us-east-2";
+
+
+    public static void main( String[] args )
+    {
+    	StreamReader streamReader = new StreamReader();
+        /*if (!streamReader.succeedParseCommand(args)) {
+            return;
+        }*/
+        
+        streamReader.readFromStream();
+    }
+    
+    private void getConsumer() {
+    	KinesisProducerConfiguration config = new KinesisProducerConfiguration();        
+        config.setRegion("");
+        config.setCredentialsProvider(new DefaultAWSCredentialsProviderChain());        
+        config.setMaxConnections(1);       
+        config.setRequestTimeout(60000);
+        config.setRecordMaxBufferedTime(15000);
+    }
+    
+    private AmazonKinesis getKinesisClient() {
+    	/*BasicAWSCredentials awsCredentials = new BasicAWSCredentials(amazonAccessKey, amazonSecretKey);
+		@SuppressWarnings("deprecation")
+		AmazonKinesisClient client = new AmazonKinesisClient(awsCredentials);
+		client.setRegion(RegionUtils.getRegion(amazonRegionName));*/
+    	
+    	AWSCredentialsProvider credentialsProvider = new
+                DefaultAWSCredentialsProviderChain();
+        AmazonKinesis client = AmazonKinesisClientBuilder.standard().withCredentials(credentialsProvider).build();
+        return client;
+    }
+    
+    private void readFromStream() {
+        long recordNum = 0;
+		final int INTERVAL = 2000;
+
+        // Getting initial stream description from aws
+		AmazonKinesis client = getKinesisClient();
+		System.out.println(client.describeStream(amazonStreamName).toString());
+        List<Shard> initialShardData = client.describeStream(amazonStreamName).getStreamDescription().getShards();
+        System.out.println("\nlist of shards:");
+        initialShardData.forEach(d->System.out.println(d.toString()));
+         
+        // Getting shardIterators (at beginning sequence number) for reach shard
+        List<String> initialShardIterators = initialShardData.stream().map(s -> 
+             client.getShardIterator(new GetShardIteratorRequest()
+                .withStreamName(amazonStreamName)
+                .withShardId(s.getShardId())
+                .withStartingSequenceNumber(s.getSequenceNumberRange().getStartingSequenceNumber())
+                .withShardIteratorType(ShardIteratorType.AT_SEQUENCE_NUMBER)
+                ).getShardIterator()
+        ).collect(Collectors.toList());
+
+        System.out.println("\nlist of ShardIterators:");
+        initialShardIterators.forEach(i -> System.out.println(i));
+        System.out.println("\nwaiting for messages....");
+
+        // WARNING!!! Assume that only have one shard. So only use that shard
+        String shardIterator = initialShardIterators.get(0);
+        
+        // Continuously read data records from a shard
+        while (true) {
+           // Create a new getRecordsRequest with an existing shardIterator 
+            // Set the maximum records to return to 25
+            GetRecordsRequest getRecordsRequest = new GetRecordsRequest();
+            getRecordsRequest.setShardIterator(shardIterator);
+            getRecordsRequest.setLimit(25); 
+
+            GetRecordsResult recordResult = client.getRecords(getRecordsRequest);
+           
+	        recordResult.getRecords().forEach(record -> {
+	      	try {
+	      		String rec = new String(record.getData().array(), "UTF-8");
+	              //JSONObject fromKinesis = new JSONObject(rec);
+	              System.out.println("\nKinesis record: " + record.toString());
+	              //System.out.println("Message: " + fromKinesis.toString());
+	          } catch (UnsupportedEncodingException e) {
+     	          System.out.println("Could not decode message from Kinesis stream result");
+	              e.printStackTrace();
+	          }
+	        });
+
+	        recordNum += recordResult.getRecords().size();
+	        System.out.println("\nReceived " + recordNum +" records. sleep for " + INTERVAL/1000 +"s ...");
+            try {
+                Thread.sleep(INTERVAL);
+            } catch (InterruptedException exception) {
+        	    System.out.println("Receving InterruptedException. Exiting ...");
+        	    return;
+            }
+            shardIterator = recordResult.getNextShardIterator();
+        }
+    	
+    }
+    
+    ////////////////////////////////////////////
+    // Helper functions
+    // 1. usage help:
+	// java -jar target/read_stream.jar -h
+    // 2. read from stream
+    // java -jar target/read_stream.jar -k AWS_KEY -s AWS_SECRET -r KINESIS_STREAM_REGION -n KINESIS_STREAM_NAME
+    private boolean succeedParseCommand(String args[]) {
+       if (args.length != EXPECTED_ARGUMENT_NUMBER) {
+           printUsage();
+           return false; 
+       }
+       if ("-h".equals(args[0])) {
+		  printUsage();
+		  return false;
+	   }
+       int index = 0;
+       while (index < args.length) {
+           String arg = args[index];
+           if ("-k".equals(arg)) {
+               ++index; // Move to the next argument 
+               amazonAccessKey = args[index];
+           } else if ("-s".equals(arg)) {
+               ++index; // Move to the next argument 
+               amazonSecretKey = args[index];
+           } else if("-r".equals(arg)) {
+               ++index; // Move to the next argument 
+               amazonRegionName = args[index];
+           } else if ("-n".equals(arg)) {
+               ++index; // Move to the next argument 
+               amazonStreamName = args[index];
+           }
+           ++index;
+       }
+       if (amazonAccessKey == null || amazonSecretKey == null || amazonRegionName == null || amazonStreamName == null) {
+           printUsage();
+           return false;
+       }
+       System.out.println("key:" + amazonAccessKey + " secrete:" + amazonSecretKey + " region:" + amazonRegionName + " stream:" + amazonStreamName);
+       return true;
+   }
+   
+   private static void printUsage() {
+       System.out.println("Usage: " + "read-stream -k AWS_KEY -s AWS_SECRET -r KINESIS_STREAM_REGION -n KINESIS_STREAM_NAME");
+   }
+
+}
