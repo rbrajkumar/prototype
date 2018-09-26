@@ -3,8 +3,12 @@ package com.comcast.vrex.kinesis.consume;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
 import com.amazonaws.services.kinesis.clientlibrary.exceptions.InvalidStateException;
@@ -16,6 +20,7 @@ import com.amazonaws.services.kinesis.clientlibrary.types.InitializationInput;
 import com.amazonaws.services.kinesis.clientlibrary.types.ProcessRecordsInput;
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownInput;
 import com.amazonaws.services.kinesis.model.Record;
+import com.comcast.vrex.kinesis.consume.analysis.BatchAnalysis;
 
 public class LogFeedProcessor implements IRecordProcessor {
 
@@ -28,22 +33,43 @@ public class LogFeedProcessor implements IRecordProcessor {
 
 	@Override
 	public void initialize(InitializationInput initializationInput) {
-		System.out.println("Shard ID - " + initializationInput.getShardId());
+		//System.out.println("Shard ID - " + initializationInput.getShardId());
 	}
 
 	@Override
 	public void processRecords(ProcessRecordsInput processRecordsInput) {
+		//saveContextData(processRecordsInput);
+		processDelay(processRecordsInput);
+	}
+
+	private void processDelay(ProcessRecordsInput processRecordsInput) {
+		List<Record> records = processRecordsInput.getRecords();
+		for(Record record: records) {
+			//CompletableFuture.runAsync(() -> {
+				new BatchAnalysis(dynamoDBClient, processRecordsInput).doReporting();
+			//});
+            prevRecord = record;   // Change prev status
+		}
+	}
+
+	void saveContextData(ProcessRecordsInput processRecordsInput) {
 		List<Record> records = processRecordsInput.getRecords();
 		for(Record record: records) {
 			String data = new String(record.getData().array(), StandardCharsets.UTF_8);
-			System.out.println("Record - " + data
-					+ " - " + record.getApproximateArrivalTimestamp().toGMTString());
-			putItem("vrex-feed-log", record.getPartitionKey(), data);
-	        System.out.println("db work done");
-			
-	        // Change prev status
-            prevRecord = record;
+			save(data);
+            prevRecord = record;   // Change prev status
 		}
+	}
+	
+	private void save(String feed) {
+		CompletableFuture.runAsync(() -> {
+		    WorkerFeed worker = new WorkerFeed(feed);
+		    Map<String, Object> json = worker.process();
+		    if(null == json || json.isEmpty()) return;  // TODO exception handling
+		    Item item = Item.fromMap(json);
+		    DynamoDB dynamodb = new DynamoDB(dynamoDBClient);
+		    dynamodb.getTable("vrex-context-storage").putItem(item);
+		});
 	}
 	
 	public void putItem(String tableName, String id, String val) {

@@ -20,7 +20,7 @@ public class Producer {
 	public static void main(String[] args) {
 		KinesisProducer kinesisProducer = createKinesisProducer();
 		try {
-			List<String> lines = Utils.readLinesFromFile("/Users/rradad026/Downloads/logdata/src/main/resources/xre_events.log");
+			List<String> lines = Utils.readLinesFromFile("/Users/rradad026/Downloads/logdata/src/main/resources/xre_events_new.log");
 			insert(kinesisProducer, lines);
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -1,6 +1,7 @@
 package com.comcast.vrex.kinesis;
 
 import java.net.InetAddress;
+import java.util.Date;
 import java.util.UUID;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -23,14 +24,18 @@ public class Consumer {
 	private static void comsume() throws Exception {
 		String workerId = InetAddress.getLocalHost().getCanonicalHostName() + ":" + UUID.randomUUID();
 		final KinesisClientLibConfiguration config = new KinesisClientLibConfiguration(
-                "vrex-feed-consumer",
-                "vrex-test2",
+                "vrex-feed-consumer-service",
+                "xre_log_to_vrex", // "vrex-test2",
                 new DefaultAWSCredentialsProviderChain(),
                 workerId
         );
-        config.withInitialPositionInStream(InitialPositionInStream.TRIM_HORIZON);
+        //config.withInitialPositionInStream(InitialPositionInStream.AT_TIMESTAMP);
+        config.withInitialPositionInStream(InitialPositionInStream.LATEST);
         config.withIdleTimeBetweenReadsInMillis(200);
-        config.withRegionName("us-east-2");
+        config.withRegionName("us-east-1");
+        config.withMaxRecords(1000);
+        
+        //config.withTimestampAtInitialPositionInStream(date);
 
         final IRecordProcessorFactory recordProcessorFactory = new VrexContextFeedProcessorFactory();
 
