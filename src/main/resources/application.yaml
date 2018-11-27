@@ -1,0 +1,8 @@
+xre.kinesis:
+  region: "us-west-2"
+  name: "xre_log_to_vrex_v2"
+  fanout-consumer: "xre-log-analyser-east-test1"
+
+dynamodb:
+  region : "us-west-2"
+  table : "vrex-context-storage1"

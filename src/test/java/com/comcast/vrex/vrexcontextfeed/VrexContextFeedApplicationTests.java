@@ -1,4 +1,4 @@
-package com.company.dept.prototype;
+package com.comcast.vrex.vrexcontextfeed;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -7,7 +7,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class PrototypeApplicationTests {
+public class VrexContextFeedApplicationTests {
 
 	@Test
 	public void contextLoads() {

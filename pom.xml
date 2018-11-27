@@ -3,18 +3,18 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.company.dept</groupId>
-	<artifactId>prototype</artifactId>
+	<groupId>com.comcast.vrex</groupId>
+	<artifactId>vrex-context-feed</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>prototype</name>
+	<name>vrex-context-feed</name>
 	<description>Demo project for Spring Boot</description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.0.1.RELEASE</version>
+		<version>2.1.0.RELEASE</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
@@ -31,12 +31,25 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-jersey</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+		
+		<!-- app related -->
+		<dependency>
+	      <groupId>software.amazon.awssdk</groupId>
+	      <artifactId>kinesis</artifactId>
+	      <version>2.0.6</version>
+	    </dependency>
+	    <dependency>
+	      <artifactId>netty-nio-client</artifactId>
+	      <groupId>software.amazon.awssdk</groupId>
+	      <version>2.0.6</version>
+	   </dependency>
+		<dependency>
+		    <groupId>software.amazon.awssdk</groupId>
+		    <artifactId>dynamodb</artifactId>
+		    <version>2.0.6</version>
+		</dependency>  
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

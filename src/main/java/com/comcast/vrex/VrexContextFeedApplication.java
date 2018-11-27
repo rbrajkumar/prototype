@@ -1,13 +1,12 @@
-package com.company.dept.prototype;
+package com.comcast.vrex;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class PrototypeApplication {
+public class VrexContextFeedApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(PrototypeApplication.class, args);
-		System.out.println("234");
+		SpringApplication.run(VrexContextFeedApplication.class, args);
 	}
 }
